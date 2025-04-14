@@ -5,19 +5,15 @@
  * API with cursor-based pagination
  * OpenAPI spec version: 1.0.0
  */
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
-  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
-  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
-  UseInfiniteQueryOptions,
-  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
@@ -34,269 +30,60 @@ export interface IDFields {
   id?: string;
 }
 
-export interface SearchRequest {
-  /** Search query string */
-  query: string;
-  /** Number of items to return */
-  limit?: number;
-  /** Pagination cursor for fetching next page */
-  cursor?: string;
-}
+export type Item = IDFields & Required<Pick<IDFields, "id">>;
 
-export type ItemAllOf = {
-  /** Name of the item */
-  name?: string;
-  /** Description of the item */
-  description?: string;
-  /** Creation timestamp */
-  createdAt?: string;
-};
-
-export type Item = IDFields &
-  ItemAllOf &
-  Required<Pick<IDFields & ItemAllOf, "name" | "id">>;
-
-export interface PaginatedItemsResponse {
-  items: Item[];
-  /** Cursor for fetching the next page, null if no more results */
-  nextCursor?: string;
-  /** Total count of matching items */
-  totalCount?: number;
-}
-
-export interface ErrorResponse {
-  /** Error message */
-  message: string;
-  /** Error code */
-  code?: string;
-}
-
-export type GetItemsParams = {
-  /**
-   * Search query string
-   */
-  query: string;
-  /**
-   * Number of items to return
-   */
-  limit?: number;
-  /**
-   * Pagination cursor for fetching next page
-   */
-  cursor?: string;
-};
-
-/**
- * @summary Search for items with pagination
- */
-export const searchItems = (
-  searchRequest: SearchRequest,
+export const getItem = (
   options?: AxiosRequestConfig,
-): Promise<AxiosResponse<PaginatedItemsResponse>> => {
-  return axios.post(`/items`, searchRequest, options);
+): Promise<AxiosResponse<Item>> => {
+  return axios.get(`/items`, options);
 };
 
-export const getSearchItemsQueryKey = (searchRequest: SearchRequest) => {
-  return [`/items`, searchRequest] as const;
+export const getGetItemQueryKey = () => {
+  return [`/items`] as const;
 };
 
-export const getSearchItemsInfiniteQueryOptions = <
-  TData = InfiniteData<Awaited<ReturnType<typeof searchItems>>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  searchRequest: SearchRequest,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof searchItems>>,
-        TError,
-        TData
-      >
-    >;
-    axios?: AxiosRequestConfig;
-  },
-) => {
+export const getGetItemQueryOptions = <
+  TData = Awaited<ReturnType<typeof getItem>>,
+  TError = AxiosError<unknown>,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData>
+  >;
+  axios?: AxiosRequestConfig;
+}) => {
   const { query: queryOptions, axios: axiosOptions } = options ?? {};
 
-  const queryKey =
-    queryOptions?.queryKey ?? getSearchItemsQueryKey(searchRequest);
+  const queryKey = queryOptions?.queryKey ?? getGetItemQueryKey();
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof searchItems>>> = ({
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getItem>>> = ({
     signal,
-  }) => searchItems(searchRequest, { signal, ...axiosOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof searchItems>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type SearchItemsInfiniteQueryResult = NonNullable<
-  Awaited<ReturnType<typeof searchItems>>
->;
-export type SearchItemsInfiniteQueryError = AxiosError<ErrorResponse>;
-
-export function useSearchItemsInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof searchItems>>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  searchRequest: SearchRequest,
-  options: {
-    query: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof searchItems>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof searchItems>>,
-          TError,
-          Awaited<ReturnType<typeof searchItems>>
-        >,
-        "initialData"
-      >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): DefinedUseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useSearchItemsInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof searchItems>>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  searchRequest: SearchRequest,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof searchItems>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof searchItems>>,
-          TError,
-          Awaited<ReturnType<typeof searchItems>>
-        >,
-        "initialData"
-      >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useSearchItemsInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof searchItems>>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  searchRequest: SearchRequest,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof searchItems>>,
-        TError,
-        TData
-      >
-    >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-/**
- * @summary Search for items with pagination
- */
-
-export function useSearchItemsInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof searchItems>>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  searchRequest: SearchRequest,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof searchItems>>,
-        TError,
-        TData
-      >
-    >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getSearchItemsInfiniteQueryOptions(
-    searchRequest,
-    options,
-  );
-
-  const query = useInfiniteQuery(
-    queryOptions,
-    queryClient,
-  ) as UseInfiniteQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>;
-  };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-export const getSearchItemsQueryOptions = <
-  TData = Awaited<ReturnType<typeof searchItems>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  searchRequest: SearchRequest,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof searchItems>>, TError, TData>
-    >;
-    axios?: AxiosRequestConfig;
-  },
-) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getSearchItemsQueryKey(searchRequest);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof searchItems>>> = ({
-    signal,
-  }) => searchItems(searchRequest, { signal, ...axiosOptions });
+  }) => getItem({ signal, ...axiosOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof searchItems>>,
+    Awaited<ReturnType<typeof getItem>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type SearchItemsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof searchItems>>
+export type GetItemQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getItem>>
 >;
-export type SearchItemsQueryError = AxiosError<ErrorResponse>;
+export type GetItemQueryError = AxiosError<unknown>;
 
-export function useSearchItems<
-  TData = Awaited<ReturnType<typeof searchItems>>,
-  TError = AxiosError<ErrorResponse>,
+export function useGetItem<
+  TData = Awaited<ReturnType<typeof getItem>>,
+  TError = AxiosError<unknown>,
 >(
-  searchRequest: SearchRequest,
   options: {
     query: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof searchItems>>, TError, TData>
+      UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData>
     > &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof searchItems>>,
+          Awaited<ReturnType<typeof getItem>>,
           TError,
-          Awaited<ReturnType<typeof searchItems>>
+          Awaited<ReturnType<typeof getItem>>
         >,
         "initialData"
       >;
@@ -306,20 +93,19 @@ export function useSearchItems<
 ): DefinedUseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useSearchItems<
-  TData = Awaited<ReturnType<typeof searchItems>>,
-  TError = AxiosError<ErrorResponse>,
+export function useGetItem<
+  TData = Awaited<ReturnType<typeof getItem>>,
+  TError = AxiosError<unknown>,
 >(
-  searchRequest: SearchRequest,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof searchItems>>, TError, TData>
+      UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData>
     > &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof searchItems>>,
+          Awaited<ReturnType<typeof getItem>>,
           TError,
-          Awaited<ReturnType<typeof searchItems>>
+          Awaited<ReturnType<typeof getItem>>
         >,
         "initialData"
       >;
@@ -329,14 +115,13 @@ export function useSearchItems<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useSearchItems<
-  TData = Awaited<ReturnType<typeof searchItems>>,
-  TError = AxiosError<ErrorResponse>,
+export function useGetItem<
+  TData = Awaited<ReturnType<typeof getItem>>,
+  TError = AxiosError<unknown>,
 >(
-  searchRequest: SearchRequest,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof searchItems>>, TError, TData>
+      UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData>
     >;
     axios?: AxiosRequestConfig;
   },
@@ -344,18 +129,14 @@ export function useSearchItems<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-/**
- * @summary Search for items with pagination
- */
 
-export function useSearchItems<
-  TData = Awaited<ReturnType<typeof searchItems>>,
-  TError = AxiosError<ErrorResponse>,
+export function useGetItem<
+  TData = Awaited<ReturnType<typeof getItem>>,
+  TError = AxiosError<unknown>,
 >(
-  searchRequest: SearchRequest,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof searchItems>>, TError, TData>
+      UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData>
     >;
     axios?: AxiosRequestConfig;
   },
@@ -363,7 +144,7 @@ export function useSearchItems<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getSearchItemsQueryOptions(searchRequest, options);
+  const queryOptions = getGetItemQueryOptions(options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,
@@ -375,419 +156,16 @@ export function useSearchItems<
   return query;
 }
 
-/**
- * @summary Get items with pagination
- */
-export const getItems = (
-  params: GetItemsParams,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<PaginatedItemsResponse>> => {
-  return axios.get(`/items`, {
-    ...options,
-    params: { ...params, ...options?.params },
-  });
-};
-
-export const getGetItemsQueryKey = (params: GetItemsParams) => {
-  return [`/items`, ...(params ? [params] : [])] as const;
-};
-
-export const getGetItemsInfiniteQueryOptions = <
-  TData = InfiniteData<
-    Awaited<ReturnType<typeof getItems>>,
-    GetItemsParams["cursor"]
-  >,
-  TError = AxiosError<ErrorResponse>,
->(
-  params: GetItemsParams,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getItems>>,
-        TError,
-        TData,
-        Awaited<ReturnType<typeof getItems>>,
-        QueryKey,
-        GetItemsParams["cursor"]
-      >
-    >;
-    axios?: AxiosRequestConfig;
-  },
-) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetItemsQueryKey(params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof getItems>>,
-    QueryKey,
-    GetItemsParams["cursor"]
-  > = ({ signal, pageParam }) =>
-    getItems(
-      { ...params, cursor: pageParam || params?.["cursor"] },
-      { signal, ...axiosOptions },
-    );
-
-  return { queryKey, queryFn, ...queryOptions } as UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof getItems>>,
-    TError,
-    TData,
-    Awaited<ReturnType<typeof getItems>>,
-    QueryKey,
-    GetItemsParams["cursor"]
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type GetItemsInfiniteQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getItems>>
->;
-export type GetItemsInfiniteQueryError = AxiosError<ErrorResponse>;
-
-export function useGetItemsInfinite<
-  TData = InfiniteData<
-    Awaited<ReturnType<typeof getItems>>,
-    GetItemsParams["cursor"]
-  >,
-  TError = AxiosError<ErrorResponse>,
->(
-  params: GetItemsParams,
-  options: {
-    query: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getItems>>,
-        TError,
-        TData,
-        Awaited<ReturnType<typeof getItems>>,
-        QueryKey,
-        GetItemsParams["cursor"]
-      >
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getItems>>,
-          TError,
-          Awaited<ReturnType<typeof getItems>>,
-          QueryKey
-        >,
-        "initialData"
-      >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): DefinedUseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetItemsInfinite<
-  TData = InfiniteData<
-    Awaited<ReturnType<typeof getItems>>,
-    GetItemsParams["cursor"]
-  >,
-  TError = AxiosError<ErrorResponse>,
->(
-  params: GetItemsParams,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getItems>>,
-        TError,
-        TData,
-        Awaited<ReturnType<typeof getItems>>,
-        QueryKey,
-        GetItemsParams["cursor"]
-      >
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getItems>>,
-          TError,
-          Awaited<ReturnType<typeof getItems>>,
-          QueryKey
-        >,
-        "initialData"
-      >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetItemsInfinite<
-  TData = InfiniteData<
-    Awaited<ReturnType<typeof getItems>>,
-    GetItemsParams["cursor"]
-  >,
-  TError = AxiosError<ErrorResponse>,
->(
-  params: GetItemsParams,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getItems>>,
-        TError,
-        TData,
-        Awaited<ReturnType<typeof getItems>>,
-        QueryKey,
-        GetItemsParams["cursor"]
-      >
-    >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-/**
- * @summary Get items with pagination
- */
-
-export function useGetItemsInfinite<
-  TData = InfiniteData<
-    Awaited<ReturnType<typeof getItems>>,
-    GetItemsParams["cursor"]
-  >,
-  TError = AxiosError<ErrorResponse>,
->(
-  params: GetItemsParams,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getItems>>,
-        TError,
-        TData,
-        Awaited<ReturnType<typeof getItems>>,
-        QueryKey,
-        GetItemsParams["cursor"]
-      >
-    >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getGetItemsInfiniteQueryOptions(params, options);
-
-  const query = useInfiniteQuery(
-    queryOptions,
-    queryClient,
-  ) as UseInfiniteQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>;
-  };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-export const getGetItemsQueryOptions = <
-  TData = Awaited<ReturnType<typeof getItems>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  params: GetItemsParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getItems>>, TError, TData>
-    >;
-    axios?: AxiosRequestConfig;
-  },
-) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetItemsQueryKey(params);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getItems>>> = ({
-    signal,
-  }) => getItems(params, { signal, ...axiosOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getItems>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type GetItemsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getItems>>
->;
-export type GetItemsQueryError = AxiosError<ErrorResponse>;
-
-export function useGetItems<
-  TData = Awaited<ReturnType<typeof getItems>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  params: GetItemsParams,
-  options: {
-    query: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getItems>>, TError, TData>
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getItems>>,
-          TError,
-          Awaited<ReturnType<typeof getItems>>
-        >,
-        "initialData"
-      >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetItems<
-  TData = Awaited<ReturnType<typeof getItems>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  params: GetItemsParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getItems>>, TError, TData>
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getItems>>,
-          TError,
-          Awaited<ReturnType<typeof getItems>>
-        >,
-        "initialData"
-      >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetItems<
-  TData = Awaited<ReturnType<typeof getItems>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  params: GetItemsParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getItems>>, TError, TData>
-    >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-/**
- * @summary Get items with pagination
- */
-
-export function useGetItems<
-  TData = Awaited<ReturnType<typeof getItems>>,
-  TError = AxiosError<ErrorResponse>,
->(
-  params: GetItemsParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getItems>>, TError, TData>
-    >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getGetItemsQueryOptions(params, options);
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-export const getSearchItemsResponseMock = (
-  overrideResponse: Partial<PaginatedItemsResponse> = {},
-): PaginatedItemsResponse => ({
-  items: Array.from(
-    { length: faker.number.int({ min: 1, max: 10 }) },
-    (_, i) => i + 1,
-  ).map(() => ({
-    ...{ id: faker.helpers.arrayElement([faker.string.alpha(20), undefined]) },
-    ...{
-      name: faker.string.alpha(20),
-      description: faker.helpers.arrayElement([
-        faker.string.alpha(20),
-        undefined,
-      ]),
-      createdAt: faker.helpers.arrayElement([
-        `${faker.date.past().toISOString().split(".")[0]}Z`,
-        undefined,
-      ]),
-    },
-  })),
-  nextCursor: faker.helpers.arrayElement([faker.string.alpha(20), undefined]),
-  totalCount: faker.helpers.arrayElement([
-    faker.number.int({ min: undefined, max: undefined }),
-    undefined,
-  ]),
-  ...overrideResponse,
+export const getGetItemResponseMock = (): Item => ({
+  ...{ id: faker.helpers.arrayElement([faker.string.alpha(20), undefined]) },
 });
 
-export const getGetItemsResponseMock = (
-  overrideResponse: Partial<PaginatedItemsResponse> = {},
-): PaginatedItemsResponse => ({
-  items: Array.from(
-    { length: faker.number.int({ min: 1, max: 10 }) },
-    (_, i) => i + 1,
-  ).map(() => ({
-    ...{ id: faker.helpers.arrayElement([faker.string.alpha(20), undefined]) },
-    ...{
-      name: faker.string.alpha(20),
-      description: faker.helpers.arrayElement([
-        faker.string.alpha(20),
-        undefined,
-      ]),
-      createdAt: faker.helpers.arrayElement([
-        `${faker.date.past().toISOString().split(".")[0]}Z`,
-        undefined,
-      ]),
-    },
-  })),
-  nextCursor: faker.helpers.arrayElement([faker.string.alpha(20), undefined]),
-  totalCount: faker.helpers.arrayElement([
-    faker.number.int({ min: undefined, max: undefined }),
-    undefined,
-  ]),
-  ...overrideResponse,
-});
-
-export const getSearchItemsMockHandler = (
+export const getGetItemMockHandler = (
   overrideResponse?:
-    | PaginatedItemsResponse
-    | ((
-        info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Promise<PaginatedItemsResponse> | PaginatedItemsResponse),
-) => {
-  return http.post("*/items", async (info) => {
-    await delay(1000);
-
-    return new HttpResponse(
-      JSON.stringify(
-        overrideResponse !== undefined
-          ? typeof overrideResponse === "function"
-            ? await overrideResponse(info)
-            : overrideResponse
-          : getSearchItemsResponseMock(),
-      ),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
-  });
-};
-
-export const getGetItemsMockHandler = (
-  overrideResponse?:
-    | PaginatedItemsResponse
+    | Item
     | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Promise<PaginatedItemsResponse> | PaginatedItemsResponse),
+      ) => Promise<Item> | Item),
 ) => {
   return http.get("*/items", async (info) => {
     await delay(1000);
@@ -798,13 +176,10 @@ export const getGetItemsMockHandler = (
           ? typeof overrideResponse === "function"
             ? await overrideResponse(info)
             : overrideResponse
-          : getGetItemsResponseMock(),
+          : getGetItemResponseMock(),
       ),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   });
 };
-export const getPaginatedAPIMock = () => [
-  getSearchItemsMockHandler(),
-  getGetItemsMockHandler(),
-];
+export const getPaginatedAPIMock = () => [getGetItemMockHandler()];
