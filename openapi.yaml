@@ -1,0 +1,96 @@
+openapi: 3.0.3
+info:
+  title: Paginated API
+  description: API with cursor-based pagination
+  version: 1.0.0
+
+paths:
+  /items:
+    post:
+      operationId: searchItems
+      summary: Search for items with pagination
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequest"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedItemsResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Search query string
+        limit:
+          type: integer
+          description: Number of items to return
+          default: 10
+        cursor:
+          type: string
+          description: Pagination cursor for fetching next page
+
+    Item:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the item
+        name:
+          type: string
+          description: Name of the item
+        description:
+          type: string
+          description: Description of the item
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+
+    PaginatedItemsResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Item"
+        nextCursor:
+          type: string
+          description: Cursor for fetching the next page, null if no more results
+        totalCount:
+          type: integer
+          description: Total count of matching items
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
