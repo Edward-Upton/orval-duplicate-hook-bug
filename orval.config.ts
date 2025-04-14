@@ -10,6 +10,7 @@ export default defineConfig({
       target: "src/index.ts",
       client: "react-query",
       prettier: true,
+      mock: true,
       override: {
         operations: {
           searchItems: {

@@ -67,6 +67,13 @@ paths:
 
 components:
   schemas:
+    IDFields:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the item
+
     SearchRequest:
       type: object
       required:
@@ -86,22 +93,23 @@ components:
     Item:
       type: object
       required:
-        - id
         - name
-      properties:
-        id:
-          type: string
-          description: Unique identifier for the item
-        name:
-          type: string
-          description: Name of the item
-        description:
-          type: string
-          description: Description of the item
-        createdAt:
-          type: string
-          format: date-time
-          description: Creation timestamp
+      allOf:
+        - $ref: "#/components/schemas/IDFields"
+        - type: object
+          properties:
+            name:
+              type: string
+              description: Name of the item
+            description:
+              type: string
+              description: Description of the item
+            createdAt:
+              type: string
+              format: date-time
+              description: Creation timestamp
+          required:
+            - id
 
     PaginatedItemsResponse:
       type: object

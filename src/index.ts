@@ -25,6 +25,15 @@ import type {
 import axios from "axios";
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
+import { faker } from "@faker-js/faker";
+
+import { HttpResponse, delay, http } from "msw";
+
+export interface IDFields {
+  /** Unique identifier for the item */
+  id?: string;
+}
+
 export interface SearchRequest {
   /** Search query string */
   query: string;
@@ -34,16 +43,18 @@ export interface SearchRequest {
   cursor?: string;
 }
 
-export interface Item {
-  /** Unique identifier for the item */
-  id: string;
+export type ItemAllOf = {
   /** Name of the item */
-  name: string;
+  name?: string;
   /** Description of the item */
   description?: string;
   /** Creation timestamp */
   createdAt?: string;
-}
+};
+
+export type Item = IDFields &
+  ItemAllOf &
+  Required<Pick<IDFields & ItemAllOf, "name" | "id">>;
 
 export interface PaginatedItemsResponse {
   items: Item[];
@@ -691,3 +702,109 @@ export function useGetItems<
 
   return query;
 }
+
+export const getSearchItemsResponseMock = (
+  overrideResponse: Partial<PaginatedItemsResponse> = {},
+): PaginatedItemsResponse => ({
+  items: Array.from(
+    { length: faker.number.int({ min: 1, max: 10 }) },
+    (_, i) => i + 1,
+  ).map(() => ({
+    ...{ id: faker.helpers.arrayElement([faker.string.alpha(20), undefined]) },
+    ...{
+      name: faker.string.alpha(20),
+      description: faker.helpers.arrayElement([
+        faker.string.alpha(20),
+        undefined,
+      ]),
+      createdAt: faker.helpers.arrayElement([
+        `${faker.date.past().toISOString().split(".")[0]}Z`,
+        undefined,
+      ]),
+    },
+  })),
+  nextCursor: faker.helpers.arrayElement([faker.string.alpha(20), undefined]),
+  totalCount: faker.helpers.arrayElement([
+    faker.number.int({ min: undefined, max: undefined }),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
+export const getGetItemsResponseMock = (
+  overrideResponse: Partial<PaginatedItemsResponse> = {},
+): PaginatedItemsResponse => ({
+  items: Array.from(
+    { length: faker.number.int({ min: 1, max: 10 }) },
+    (_, i) => i + 1,
+  ).map(() => ({
+    ...{ id: faker.helpers.arrayElement([faker.string.alpha(20), undefined]) },
+    ...{
+      name: faker.string.alpha(20),
+      description: faker.helpers.arrayElement([
+        faker.string.alpha(20),
+        undefined,
+      ]),
+      createdAt: faker.helpers.arrayElement([
+        `${faker.date.past().toISOString().split(".")[0]}Z`,
+        undefined,
+      ]),
+    },
+  })),
+  nextCursor: faker.helpers.arrayElement([faker.string.alpha(20), undefined]),
+  totalCount: faker.helpers.arrayElement([
+    faker.number.int({ min: undefined, max: undefined }),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
+export const getSearchItemsMockHandler = (
+  overrideResponse?:
+    | PaginatedItemsResponse
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<PaginatedItemsResponse> | PaginatedItemsResponse),
+) => {
+  return http.post("*/items", async (info) => {
+    await delay(1000);
+
+    return new HttpResponse(
+      JSON.stringify(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getSearchItemsResponseMock(),
+      ),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  });
+};
+
+export const getGetItemsMockHandler = (
+  overrideResponse?:
+    | PaginatedItemsResponse
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<PaginatedItemsResponse> | PaginatedItemsResponse),
+) => {
+  return http.get("*/items", async (info) => {
+    await delay(1000);
+
+    return new HttpResponse(
+      JSON.stringify(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetItemsResponseMock(),
+      ),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  });
+};
+export const getPaginatedAPIMock = () => [
+  getSearchItemsMockHandler(),
+  getGetItemsMockHandler(),
+];
