@@ -19,6 +19,13 @@ export default defineConfig({
               useInfiniteQueryParam: "cursor",
             },
           },
+          getItems: {
+            query: {
+              useQuery: true,
+              useInfinite: true,
+              useInfiniteQueryParam: "cursor",
+            },
+          },
         },
       },
     },
