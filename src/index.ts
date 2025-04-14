@@ -5,22 +5,19 @@
  * API with cursor-based pagination
  * OpenAPI spec version: 1.0.0
  */
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
   InfiniteData,
-  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
   UseInfiniteQueryOptions,
   UseInfiniteQueryResult,
-  UseMutationOptions,
-  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
@@ -88,77 +85,284 @@ export const searchItems = (
   return axios.post(`/items`, searchRequest, options);
 };
 
-export const getSearchItemsMutationOptions = <
-  TError = AxiosError<ErrorResponse>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof searchItems>>,
-    TError,
-    { data: SearchRequest },
-    TContext
-  >;
-  axios?: AxiosRequestConfig;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof searchItems>>,
-  TError,
-  { data: SearchRequest },
-  TContext
-> => {
-  const mutationKey = ["searchItems"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof searchItems>>,
-    { data: SearchRequest }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return searchItems(data, axiosOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
+export const getSearchItemsQueryKey = (searchRequest: SearchRequest) => {
+  return [`/items`, searchRequest] as const;
 };
 
-export type SearchItemsMutationResult = NonNullable<
+export const getSearchItemsInfiniteQueryOptions = <
+  TData = InfiniteData<Awaited<ReturnType<typeof searchItems>>>,
+  TError = AxiosError<ErrorResponse>,
+>(
+  searchRequest: SearchRequest,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof searchItems>>,
+        TError,
+        TData
+      >
+    >;
+    axios?: AxiosRequestConfig;
+  },
+) => {
+  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getSearchItemsQueryKey(searchRequest);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof searchItems>>> = ({
+    signal,
+  }) => searchItems(searchRequest, { signal, ...axiosOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof searchItems>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type SearchItemsInfiniteQueryResult = NonNullable<
   Awaited<ReturnType<typeof searchItems>>
 >;
-export type SearchItemsMutationBody = SearchRequest;
-export type SearchItemsMutationError = AxiosError<ErrorResponse>;
+export type SearchItemsInfiniteQueryError = AxiosError<ErrorResponse>;
 
-/**
- * @summary Search for items with pagination
- */
-export const useSearchItems = <
+export function useSearchItemsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof searchItems>>>,
   TError = AxiosError<ErrorResponse>,
-  TContext = unknown,
 >(
+  searchRequest: SearchRequest,
+  options: {
+    query: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof searchItems>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchItems>>,
+          TError,
+          Awaited<ReturnType<typeof searchItems>>
+        >,
+        "initialData"
+      >;
+    axios?: AxiosRequestConfig;
+  },
+  queryClient?: QueryClient,
+): DefinedUseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSearchItemsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof searchItems>>>,
+  TError = AxiosError<ErrorResponse>,
+>(
+  searchRequest: SearchRequest,
   options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof searchItems>>,
-      TError,
-      { data: SearchRequest },
-      TContext
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof searchItems>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchItems>>,
+          TError,
+          Awaited<ReturnType<typeof searchItems>>
+        >,
+        "initialData"
+      >;
+    axios?: AxiosRequestConfig;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSearchItemsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof searchItems>>>,
+  TError = AxiosError<ErrorResponse>,
+>(
+  searchRequest: SearchRequest,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof searchItems>>,
+        TError,
+        TData
+      >
     >;
     axios?: AxiosRequestConfig;
   },
   queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof searchItems>>,
-  TError,
-  { data: SearchRequest },
-  TContext
-> => {
-  const mutationOptions = getSearchItemsMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
 };
+/**
+ * @summary Search for items with pagination
+ */
+
+export function useSearchItemsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof searchItems>>>,
+  TError = AxiosError<ErrorResponse>,
+>(
+  searchRequest: SearchRequest,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof searchItems>>,
+        TError,
+        TData
+      >
+    >;
+    axios?: AxiosRequestConfig;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getSearchItemsInfiniteQueryOptions(
+    searchRequest,
+    options,
+  );
+
+  const query = useInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getSearchItemsQueryOptions = <
+  TData = Awaited<ReturnType<typeof searchItems>>,
+  TError = AxiosError<ErrorResponse>,
+>(
+  searchRequest: SearchRequest,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof searchItems>>, TError, TData>
+    >;
+    axios?: AxiosRequestConfig;
+  },
+) => {
+  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getSearchItemsQueryKey(searchRequest);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof searchItems>>> = ({
+    signal,
+  }) => searchItems(searchRequest, { signal, ...axiosOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof searchItems>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type SearchItemsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof searchItems>>
+>;
+export type SearchItemsQueryError = AxiosError<ErrorResponse>;
+
+export function useSearchItems<
+  TData = Awaited<ReturnType<typeof searchItems>>,
+  TError = AxiosError<ErrorResponse>,
+>(
+  searchRequest: SearchRequest,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof searchItems>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchItems>>,
+          TError,
+          Awaited<ReturnType<typeof searchItems>>
+        >,
+        "initialData"
+      >;
+    axios?: AxiosRequestConfig;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSearchItems<
+  TData = Awaited<ReturnType<typeof searchItems>>,
+  TError = AxiosError<ErrorResponse>,
+>(
+  searchRequest: SearchRequest,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof searchItems>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchItems>>,
+          TError,
+          Awaited<ReturnType<typeof searchItems>>
+        >,
+        "initialData"
+      >;
+    axios?: AxiosRequestConfig;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSearchItems<
+  TData = Awaited<ReturnType<typeof searchItems>>,
+  TError = AxiosError<ErrorResponse>,
+>(
+  searchRequest: SearchRequest,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof searchItems>>, TError, TData>
+    >;
+    axios?: AxiosRequestConfig;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary Search for items with pagination
+ */
+
+export function useSearchItems<
+  TData = Awaited<ReturnType<typeof searchItems>>,
+  TError = AxiosError<ErrorResponse>,
+>(
+  searchRequest: SearchRequest,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof searchItems>>, TError, TData>
+    >;
+    axios?: AxiosRequestConfig;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getSearchItemsQueryOptions(searchRequest, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 /**
  * @summary Get items with pagination

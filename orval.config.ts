@@ -15,6 +15,8 @@ export default defineConfig({
           searchItems: {
             query: {
               useQuery: true,
+              // We want this operation to be treated as a query, not a mutation
+              useMutation: false,
               useInfinite: true,
               useInfiniteQueryParam: "cursor",
             },
